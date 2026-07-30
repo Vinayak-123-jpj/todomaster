@@ -3,13 +3,19 @@ import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
 import { ERROR_MESSAGES } from "@/lib/constants";
 import { updateTodoSchema } from "@/lib/validations";
-import { errorResponse, successResponse, handleErrorResponse } from "@/lib/response";
+import {
+  errorResponse,
+  successResponse,
+  handleErrorResponse,
+} from "@/lib/response";
 import { NotFoundError, ForbiddenError } from "@/lib/errors";
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id: todoId } = await params;
+
   const { userId } = auth();
 
   if (!userId) {
@@ -19,7 +25,6 @@ export async function PUT(
   try {
     const body = await req.json();
     const validatedData = updateTodoSchema.parse(body);
-    const todoId = params.id;
 
     const todo = await prisma.todo.findUnique({
       where: { id: todoId },
@@ -46,8 +51,10 @@ export async function PUT(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id: todoId } = await params;
+
   const { userId } = auth();
 
   if (!userId) {
@@ -55,8 +62,6 @@ export async function DELETE(
   }
 
   try {
-    const todoId = params.id;
-
     const todo = await prisma.todo.findUnique({
       where: { id: todoId },
     });
@@ -73,7 +78,9 @@ export async function DELETE(
       where: { id: todoId },
     });
 
-    return successResponse({ message: "Todo deleted successfully" });
+    return successResponse({
+      message: "Todo deleted successfully",
+    });
   } catch (error) {
     return handleErrorResponse(error);
   }
